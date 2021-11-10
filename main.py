@@ -141,6 +141,7 @@ async def on_message(message):
   author = message.author
   bad_word = False
   muted_role = discord.utils.get(message.guild.roles, name="Muted")
+  check_counter = 0
 
   # If the user is not a bot, then check if their message had a bad word in it.
   if not message.author.bot:
@@ -153,64 +154,83 @@ async def on_message(message):
 
         print(f"Added {message.author} to Moderation System.")
     
-    # Spam Filte
+    # Check if user was spamming
+    last_3_messages = await message.channel.history(limit=3).flatten()
 
-    # Check for any bad words in their message
-    for word in bad_words:
+    check_txt = message.content
+    for msg in last_3_messages:
+      if message.author == msg.author:
+        if msg.content == check_txt:
+          check_counter += 1
+    
+    # If the user has the same message 3 times then...
+    if check_counter == 3:
+      for msg in last_3_messages:
+        try:
+          await msg.delete(delay=None)
+        except:
+          pass
+      
+      await message.channel.send(f"{message.author.mention} Don't spam. Continuing can result in a mute.")
 
-      if word in message.content: 
-        bad_word = True
-        
+      moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
+      moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
 
-        if bad_word:
-          moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
-          moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
+    if check_counter == 3:
+      for word in bad_words:
 
-          user_mod_data = moderation_system.find_one({"_id": message.author.id})
-          warns = user_mod_data["warnings"]
-          triggered_content = message.content
-          await message.delete(delay=None)
-
-          triggered_word = word
-          response = await message.channel.send(f"{message.author.mention} 🚫 Profanity is not allowed. This is your **#{warns}** warning.")
-
-          bad_word_embed = discord.Embed(title="🚫 Bad Word Triggered",description=f"Bad Word: `{triggered_word}` was triggered by **{author}**({author.mention})").set_thumbnail(url=author.avatar_url)
+        if word in message.content: 
+          bad_word = True
           
-          bad_word_embed.add_field(name="Message Content:",value=f"```{triggered_content}```",inline=False)
 
-          bad_word_embed.timestamp = dt.datetime.utcnow()
-          bad_word_embed.set_footer(text="AUTOMOD")
+          if bad_word:
+            moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
+            moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
 
-          await usher_log.send(embed=bad_word_embed)
+            user_mod_data = moderation_system.find_one({"_id": message.author.id})
+            warns = user_mod_data["warnings"]
+            triggered_content = message.content
+            await message.delete(delay=None)
 
-          await response.delete(delay=5)
+            triggered_word = word
+            response = await message.channel.send(f"{message.author.mention} 🚫 Profanity is not allowed. This is your **#{warns}** warning.")
 
-          max_warns = 3
-
-
-          # Check if their they have more than 3 warns.
-
-          user_mod_data = moderation_system.find_one({"_id": message.author.id})
-          user_warns = user_mod_data["warnings"]
-
-          if user_warns > max_warns:
-            moderation_system.update_one({"_id": message.author.id}, {"$set": {"warnings": 0}})
-            moderation_system.update_one({"_id": message.author.id}, {"$inc": {"mutes": 1}})
-            moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_mutes": 1}})
+            bad_word_embed = discord.Embed(title="🚫 Bad Word Triggered",description=f"Bad Word: `{triggered_word}` was triggered by **{author}**({author.mention})").set_thumbnail(url=author.avatar_url)
             
-            try:
-              await message.author.add_roles(muted_role, reason="Attained 4 warns.")
-              await message.author.send("You've been muted for attaining 4 warnings. The Duration of your mute sentence is __15 Minutes__")
-              moderation_system.update_one({"_id": message.author.id}, {"$set": {"is_muted": True}})
-              
-              await asyncio.sleep(900)
+            bad_word_embed.add_field(name="Message Content:",value=f"```{triggered_content}```",inline=False)
 
-              await member.remove_roles(muted_role)
-              moderation_system.update_one({"_id": message.author.id}, {"$set": {"is_muted": False}})
-              m = await message.author.send("You've been unmuted. Make sure to follow the rules next time.")
-              await m.add_reaction("👍")
-            except:
-              print("Couldn't mute that user.")
+            bad_word_embed.timestamp = dt.datetime.utcnow()
+            bad_word_embed.set_footer(text="AUTOMOD")
+
+            await usher_log.send(embed=bad_word_embed)
+
+            await response.delete(delay=5)
+
+
+            # Check if their they have more than 3 warns.
+
+  max_warns = 3
+  user_mod_data = moderation_system.find_one({"_id": message.author.id})
+  user_warns = user_mod_data["warnings"]
+
+  if user_warns > max_warns:
+    moderation_system.update_one({"_id": message.author.id}, {"$set": {"warnings": 0}})
+    moderation_system.update_one({"_id": message.author.id}, {"$inc": {"mutes": 1}})
+    moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_mutes": 1}})
+    
+    try:
+      await message.author.add_roles(muted_role, reason="Attained 4 warns.")
+      await message.author.send("You've been muted for attaining 4 warnings. The Duration of your mute sentence is __15 Minutes__")
+      moderation_system.update_one({"_id": message.author.id}, {"$set": {"is_muted": True}})
+      
+      await asyncio.sleep(900)
+
+      await member.remove_roles(muted_role)
+      moderation_system.update_one({"_id": message.author.id}, {"$set": {"is_muted": False}})
+      m = await message.author.send("You've been unmuted. Make sure to follow the rules next time.")
+      await m.add_reaction("👍")
+    except:
+      print("Couldn't mute that user.")
 
           
     # WORD OF THE WEEK SYSTEM
