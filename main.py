@@ -152,10 +152,14 @@ async def on_message(message):
         moderation_system.insert_one(post)
 
         print(f"Added {message.author} to Moderation System.")
-        
+    
+    # Spam Filter
+    
+
+    # Check for any bad words in their message
     for word in bad_words:
 
-      if word in message.content: # If they have a bad word in their message
+      if word in message.content: 
         bad_word = True
         
 
