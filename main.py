@@ -15,6 +15,8 @@ import pymongo
 from pymongo import MongoClient
 from utils import *
 
+clown_user = None
+
 cluster = MongoClient("mongodb+srv://crazen:Vf1b3hXAphxvbdur@dlbcserver.5a3ea.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 db = cluster["members"]
 level_system = db["levels"]
@@ -110,18 +112,7 @@ async def weekly_words_loop():
 
 
 # Each Suday, send the YT livestream link in the server; WIP
-@tasks.loop(minutes=1)
-async def youtube():
-
-  today_date = dt.date.today()
-
-  if today.strftime("%a") == "Mon" or today.strftime("%a") == "Sun":
-
-    try:
-      pass
-
-    except:
-      pass
+  
 
 
 # EVENTS
@@ -154,14 +145,15 @@ async def on_message(message):
 
         print(f"Added {message.author} to Moderation System.")
     
-    # Check if user was spamming
-    last_3_messages = await message.channel.history(limit=3).flatten()
+    if len(message.content > 0):
+      # Check if user was spamming
+      last_3_messages = await message.channel.history(limit=3).flatten()
 
-    check_txt = message.content
-    for msg in last_3_messages:
-      if message.author == msg.author:
-        if msg.content == check_txt:
-          check_counter += 1
+      check_txt = message.content
+      for msg in last_3_messages:
+        if message.author == msg.author:
+          if msg.content == check_txt:
+            check_counter += 1
     
     # If the user has the same message 3 times then...
     if check_counter == 3:
@@ -171,7 +163,7 @@ async def on_message(message):
         except:
           pass
       
-      await message.channel.send(f"{message.author.mention} Don't spam. Continuing can result in a mute.")
+      await message.channel.send(f"{message.author.mention} Dont't send repeated text. Continuing can result in a mute.")
 
       moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
       moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
@@ -246,7 +238,15 @@ async def on_message(message):
           level_system.insert_one(post)
 
           print(f"Added {message.author} to Level System.")
+      
+      if clown_user == message.author:
+        
+        try:
+          await message.reply(f'"{message.content}" - 🤓')
+        except:
 
+          await message.channel.send(f'{message.author.mention} "{message.content}" - 🤓')
+      
       leveled_up = add_exp(message.author.id, 1)
 
       user_level = user_data["level"]
@@ -547,6 +547,16 @@ async def votemute(ctx,member: discord.Member=None):
   else:
     msg = await ctx.message.reply(content='Uh, you gotta specify a "Member" to vote-mute buddy.')
     await msg.delete(delay=5)
+
+@client.command()
+async def nerdify(ctx,member: discord.Member=None):
+  
+  if member == None:
+    clown_user = None
+
+  elif member != None:
+    clown_user == member
+
 
 keep_alive()
 client.run(os.environ['TOKEN'])
