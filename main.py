@@ -15,14 +15,13 @@ import pymongo
 from pymongo import MongoClient
 from utils import *
 
-clown_user = None
-
 cluster = MongoClient("mongodb+srv://crazen:Vf1b3hXAphxvbdur@dlbcserver.5a3ea.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 db = cluster["members"]
 level_system = db["levels"]
 moderation_system = db["moderation"]
 weekly_wordsys = db["weekly_words"]
 weekly_word_loop_data = db["weekly_word_data"]
+clown_data = db["clown"]
 
 client = ComponentsBot(command_prefix = '.',intents=intents)
 
@@ -37,13 +36,25 @@ for cog in cogs:
 # assests
 no_Permission = discord.Embed(description="Sorry, you don't have permission to run that command.",color=0xde370d)
 
-bad_words = ["test123","hentai","Hentai","porn","cunt","idgaf","wtf","WTF","niga","nigger","nigga","vagina","puss","pussy","dick","d1ck","d!ck","bich","bitch","bitc","Bitch","BITCH","BICH","fack","fak","fuck","fuk","Fuck","Fuk","CUNT","Cunt","asshole","🖕","shit","sh!t","sh1t","shii","a$$","shi","shii","shiii","shiiii","faggot","fag","Faggot","Fag","mfs","mf","stfu","Stfu","STFU"]
+bad_words = ["test123","hentai","Hentai","porn","cunt","idgaf","wtf","WTF","niga","nigger","nigga","vagina","puss","pussy","dick","d1ck","d!ck","bich","bitch","bitc","Bitch","BITCH","BICH","fack","fak","fuck","fuk","Fuck","Fuk","cunt","CUNT","Cunt","asshole","🖕","shit","sh!t","sh1t","shii","a$$","shi","shii","shiii","shiiii","faggot","fag","Faggot","Fag","mfs","mf","stfu","Stfu","STFU"]
 
 # WEEKLY WORDS
 weekly_words = {
   "1": ["thanks","great","amen","nice","cool"],
   "2": ["brethren","amazing","gg","morning"]
 }
+
+@tasks.loop(minutes=1)
+async def event_loop():
+
+  today = dt.date.today()
+  thanksgiving_day = dt.date(2021,11,25)
+
+  days_left = thanksgiving_day - today
+  days_left = str(days_left)
+  days_left = days_left[:6]
+
+  await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,name=f"🦃ThanksGiving coming in {days_left}!🦃"))
 
 # TASKS LOOPS
 @tasks.loop(minutes=1)
@@ -67,9 +78,13 @@ async def weekly_words_loop():
       last_list = weekly_data["current_list"]
       list_number = random.randint(1,2)
 
-      while list_number == last_list:
+      for i in range(100):
         list_number = random.randint(1,2)
-        print(f"New List: {list_number}")
+        
+        if list_number != last_list:
+          print(f"New List: {list_number}")
+          break
+
 
       new_year = today.year
       new_month = today.month
@@ -99,6 +114,61 @@ async def weekly_words_loop():
       weekly_embed.timestamp = dt.datetime.utcnow()
       weekly_embed.set_footer(text="Weekly words Reset every Week.")
 
+      weekly_list = [0,1,2,3,4]
+      loop_index = 1
+      list_index = 0
+      last_week_results = discord.Embed(title="Last Week Results")
+
+      for user_ww in weekly_wordsys.find().sort("words_this_week",-1):
+        
+        user_id = user_ww["_id"]
+
+        member = discord.utils.get(client.guilds[0].members, id=user_id)
+
+        if member == None:
+          member = f"<@{user_id}>"
+        
+        user_words = user_ww["words_this_week"]
+        
+        if type(member) != str:
+          if loop_index == 1:
+            weekly_list[list_index] = f"🥇 ** Words: {user_words}** - {member.mention}n"
+          elif loop_index == 2:
+            weekly_list[list_index] = f"🥈 **Words: {user_words}** - {member.mention}n"
+          elif loop_index == 3:
+            weekly_list[list_index] = f"🥉 **Words: {user_words}** - {member.mention}n"
+          else:
+            weekly_list[list_index] = f"__#{loop_index}__ **Words: {user_words}** - {member.mention}n"
+        else:
+          if loop_index == 1:
+            weekly_list[list_index] = f"🥇 ** Words: {user_words}** - {member}n"
+          elif loop_index == 2:
+            weekly_list[list_index] = f"🥈 **Words: {user_words}** - {member}n"
+          elif loop_index == 3:
+            weekly_list[list_index] = f"🥉 **Words: {user_words}** - {member}n"
+          else:
+            weekly_list[list_index] = f"__#{loop_index}__ **Words: {user_words}** - {member}n"
+
+
+        loop_index += 1
+        list_index += 1
+
+        if loop_index == 6:
+          break
+      
+      weekly_list = str(weekly_list)
+
+      weekly_list = weekly_list.replace("'", "")
+      weekly_list = weekly_list.replace(",", "")
+      weekly_list = weekly_list.replace("]", "")
+      weekly_list = weekly_list.replace("[", "")
+      weekly_list = weekly_list.replace("n", "\n")
+      
+
+      weekly_lb = discord.Embed(title="Last Week's Results",description=weekly_list)
+      weekly_channel = discord.utils.get(client.guilds[0].channels, id=896880737318498375)
+      await weekly_channel.send(embed=weekly_lb)
+
       for user_data in weekly_wordsys.find():
         
         user_id = user_data["_id"]
@@ -125,6 +195,7 @@ async def on_ready():
   await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,name="DLBC Baltimore YT"))
 
   weekly_words_loop.start()
+  event_loop.start()
 
 @client.event
 async def on_message(message):
@@ -133,6 +204,19 @@ async def on_message(message):
   bad_word = False
   muted_role = discord.utils.get(message.guild.roles, name="Muted")
   check_counter = 0
+  clown = clown_data.find_one({"_id": 1})
+
+
+  clown_user = clown["current_clown"]
+  
+  if int(clown_user) == message.author.id:
+        
+    try:
+      await message.reply(content=f' "{message.content}" - 🤓')
+    except:
+
+      await message.channel.send(f'{message.author.mention} "{message.content}" - 🤓')
+
 
   # If the user is not a bot, then check if their message had a bad word in it.
   if not message.author.bot:
@@ -145,7 +229,7 @@ async def on_message(message):
 
         print(f"Added {message.author} to Moderation System.")
     
-    if len(message.content > 0):
+    if len(message.content) > 0:
       # Check if user was spamming
       last_3_messages = await message.channel.history(limit=3).flatten()
 
@@ -200,29 +284,29 @@ async def on_message(message):
 
 
             # Check if their they have more than 3 warns.
+  if not message.author.bot:
+    max_warns = 3
+    user_mod_data = moderation_system.find_one({"_id": message.author.id})
+    user_warns = user_mod_data["warnings"]
 
-  max_warns = 3
-  user_mod_data = moderation_system.find_one({"_id": message.author.id})
-  user_warns = user_mod_data["warnings"]
-
-  if user_warns > max_warns:
-    moderation_system.update_one({"_id": message.author.id}, {"$set": {"warnings": 0}})
-    moderation_system.update_one({"_id": message.author.id}, {"$inc": {"mutes": 1}})
-    moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_mutes": 1}})
-    
-    try:
-      await message.author.add_roles(muted_role, reason="Attained 4 warns.")
-      await message.author.send("You've been muted for attaining 4 warnings. The Duration of your mute sentence is __15 Minutes__")
-      moderation_system.update_one({"_id": message.author.id}, {"$set": {"is_muted": True}})
+    if user_warns > max_warns:
+      moderation_system.update_one({"_id": message.author.id}, {"$set": {"warnings": 0}})
+      moderation_system.update_one({"_id": message.author.id}, {"$inc": {"mutes": 1}})
+      moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_mutes": 1}})
       
-      await asyncio.sleep(900)
+      try:
+        await message.author.add_roles(muted_role, reason="Attained 4 warns.")
+        await message.author.send("You've been muted for attaining 4 warnings. The Duration of your mute sentence is __15 Minutes__")
+        moderation_system.update_one({"_id": message.author.id}, {"$set": {"is_muted": True}})
+        
+        await asyncio.sleep(900)
 
-      await member.remove_roles(muted_role)
-      moderation_system.update_one({"_id": message.author.id}, {"$set": {"is_muted": False}})
-      m = await message.author.send("You've been unmuted. Make sure to follow the rules next time.")
-      await m.add_reaction("👍")
-    except:
-      print("Couldn't mute that user.")
+        await member.remove_roles(muted_role)
+        moderation_system.update_one({"_id": message.author.id}, {"$set": {"is_muted": False}})
+        m = await message.author.send("You've been unmuted. Make sure to follow the rules next time.")
+        await m.add_reaction("👍")
+      except:
+        print("Couldn't mute that user.")
 
           
     # WORD OF THE WEEK SYSTEM
@@ -239,14 +323,6 @@ async def on_message(message):
 
           print(f"Added {message.author} to Level System.")
       
-      if clown_user == message.author:
-        
-        try:
-          await message.reply(f'"{message.content}" - 🤓')
-        except:
-
-          await message.channel.send(f'{message.author.mention} "{message.content}" - 🤓')
-      
       leveled_up = add_exp(message.author.id, 1)
 
       user_level = user_data["level"]
@@ -254,10 +330,11 @@ async def on_message(message):
       # WEEKLY WORDS SYSTEM
       user_words_data = weekly_wordsys.find_one({"_id": message.author.id})
       if user_words_data == None:
-        post = {"_id": message.author.id, "total_words": 0, "words_this_week": 0}
-        weekly_wordsys.insert_one(post)
+        if not message.author.bot:
+          post = {"_id": message.author.id, "total_words": 0, "words_this_week": 0}
+          weekly_wordsys.insert_one(post)
 
-        print(f"Added {message.author} to weekly Words System.")
+          print(f"Added {message.author} to weekly Words System.")
       # ==================
 
       if leveled_up:
@@ -549,14 +626,26 @@ async def votemute(ctx,member: discord.Member=None):
     await msg.delete(delay=5)
 
 @client.command()
-async def nerdify(ctx,member: discord.Member=None):
+async def nerdify(ctx,user_id=None):
+  clown_data.find_one({"_id": 1})
+
+  if user_id == None:
+    clown_data.update_one({"_id": 1}, {"$set": {"current_clown": 0}})
+    print(f"clown_user is now {None}")
+  elif user_id != None:
+    clown_data.update_one({"_id": 1}, {"$set": {"current_clown": user_id}})
+    print(f"{user_id} is now a clown.")
+
   
-  if member == None:
-    clown_user = None
+  await ctx.message.add_reaction("👍")
 
-  elif member != None:
-    clown_user == member
+@client.command()
+async def event(ctx):
+  everyone = ctx.guild.default_role
 
+  await ctx.send(content=f"{everyone}\n**🦃THANKSGIVING🦃**\n Looks like Thanksgiving is right around corner. Can't Wait 👀\nhttps://discord.gg/3waK2uf6?event=908804565237891102")
+
+  await ctx.message.delete(delay=None)
 
 keep_alive()
 client.run(os.environ['TOKEN'])
