@@ -22,6 +22,7 @@ moderation_system = db["moderation"]
 weekly_wordsys = db["weekly_words"]
 weekly_word_loop_data = db["weekly_word_data"]
 clown_data = db["clown"]
+turkey_event_sys = db["turkey_event"]
 
 client = ComponentsBot(command_prefix = '.',intents=intents)
 
@@ -217,7 +218,18 @@ async def on_message(message):
 
       await message.channel.send(f'{message.author.mention} "{message.content}" - 🤓')
 
+  turkey_user = turkey_event_sys.find_one({"_id": message.author.id})
+  if turkey_user == None:
+    if not message.author.bot:
+      post = {"_id": message.author.id, "turkeys": 0}
+      turkey_event_sys.insert_one(post)
 
+      print(f"Added {message.author} to Turkey Event.")
+
+  if "🦃" in message.content:
+    turkey_event_sys.update_one({"_id": message.author.id}, {"$inc": {"turkeys": 1}})
+    print(f"{message.author}'s turkeys has += 1")
+  
   # If the user is not a bot, then check if their message had a bad word in it.
   if not message.author.bot:
 
@@ -625,7 +637,7 @@ async def votemute(ctx,member: discord.Member=None):
     msg = await ctx.message.reply(content='Uh, you gotta specify a "Member" to vote-mute buddy.')
     await msg.delete(delay=5)
 
-@client.command()
+@client.command(hidden=True)
 async def nerdify(ctx,user_id=None):
   clown_data.find_one({"_id": 1})
 
@@ -639,12 +651,25 @@ async def nerdify(ctx,user_id=None):
   
   await ctx.message.add_reaction("👍")
 
-@client.command()
+@client.command(hidden=True)
 async def event(ctx):
   everyone = ctx.guild.default_role
 
   await ctx.send(content=f"{everyone}\n**🦃THANKSGIVING🦃**\n Looks like Thanksgiving is right around corner. Can't Wait 👀\nhttps://discord.gg/3waK2uf6?event=908804565237891102")
 
+  await ctx.message.delete(delay=None)
+
+@client.command(hidden=True)
+async def turk(ctx):
+  everyone = ctx.guild.default_role
+
+  event_embed = discord.Embed(title="🦃LIMITED-TIME Thankgiving Turkey Event🦃",color=0xff9933)
+  event_embed.add_field(name="**How It Works**:",value="When you send a Message in the Server containing a 🦃 Emoji, you get `+1 Turkey Points`.\n\nAnother way to get Turkey Points is by getting pinned messages in #counting, which rewards you with ``+5 Turkey Points``.\n\nWhoever has the most points by <t:1637989200:D> recieves the Ultimate Prize of `5,000,000` Dank Memer Coins!\nGood luck :)",inline=False)
+  event_embed.add_field(name="**Tip**:",value="You can check how many points you have by using the ``.stats`` command, as well as check how many other people have by using the ``.turkeylb`` command.")
+  event_embed.set_footer(text="Event Created as Contribution to Server Activity")
+  event_embed.timestamp = dt.datetime.utcnow()
+
+  await ctx.send(content=f"{everyone}",embed=event_embed)
   await ctx.message.delete(delay=None)
 
 keep_alive()

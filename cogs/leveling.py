@@ -10,6 +10,7 @@ db = cluster["members"]
 level_system = db["levels"]
 weekly_wordsys = db["weekly_words"]
 moderation_system = db["moderation"]
+turkey_event_sys = db["turkey_event"]
 
 class Leveling(commands.Cog):
 
@@ -35,6 +36,8 @@ class Leveling(commands.Cog):
       warns = user_mod_data["warnings"]
       total_warns = user_mod_data["total_warns"]
 
+      turkey_user = turkey_event_sys.find_one({"_id": ctx.message.author.id})
+      points = turkey_user["turkeys"]
 
 
 
@@ -45,6 +48,8 @@ class Leveling(commands.Cog):
       info_embed.set_footer(text="😊 Server Stats")
 
       info_embed.add_field(name=f"**Level**",value=f"LVL: {level} | EXP: (``{exp}``/``{max_exp}``)",inline=False)
+      
+      info_embed.add_field(name="**🦃Turkey Event Stats🦃**",value=f"Points: {points}",inline=False)
 
       info_embed.add_field(name=f"**Moderation**",value=f"Recent Warns: {warns} \nTotal Warns: {total_warns}",inline=False)
 
@@ -98,18 +103,18 @@ class Leveling(commands.Cog):
       try: 
         
         user_id = user["_id"]
-        user_level = user["level"]
+        user_points = user["level"]
         member = discord.utils.get(ctx.guild.members, id=user_id)
 
         
         if loop_index == 1:
-          user_list[list_index] = f"🥇 ** Level: {user_level}** - {member.mention}n"
+          user_list[list_index] = f"🥇 ** Level: {user_points}** - {member.mention}n"
         elif loop_index == 2:
-          user_list[list_index] = f"🥈 **Level: {user_level}** - {member.mention}n"
+          user_list[list_index] = f"🥈 **Level: {user_points}** - {member.mention}n"
         elif loop_index == 3:
-          user_list[list_index] = f"🥉 **Level: {user_level}** - {member.mention}n"
+          user_list[list_index] = f"🥉 **Level: {user_points}** - {member.mention}n"
         else:
-          user_list[list_index] = f"__#{loop_index}__ **Level: {user_level}** - {member.mention}n"
+          user_list[list_index] = f"__#{loop_index}__ **Level: {user_points}** - {member.mention}n"
         
 
         loop_index += 1
@@ -129,6 +134,55 @@ class Leveling(commands.Cog):
     user_list = user_list.replace("n", "\n")
 
     leaderboard = discord.Embed(title="Top 10 Highest Level Users",description=user_list)
+
+    await ctx.send(embed=leaderboard)
+  
+  @commands.command(aliases=("turkey",))
+  async def turkeylb(self,ctx):
+
+    user_list_list = []
+    user_list = [0,1,2,3,4]
+
+    user_data_list = turkey_event_sys.find().sort("turkeys",-1)
+
+    loop_index = 1
+    list_index = 0
+
+    for user in user_data_list:
+      try: 
+        
+        user_id = user["_id"]
+        user_points = user["turkeys"]
+        member = discord.utils.get(ctx.guild.members, id=user_id)
+
+        
+        if loop_index == 1:
+          user_list[list_index] = f"🥇 ** Points: {user_points}** - {member.mention}.."
+        elif loop_index == 2:
+          user_list[list_index] = f"🥈 **Points: {user_points}** - {member.mention}.."
+        elif loop_index == 3:
+          user_list[list_index] = f"🥉 **Points: {user_points}** - {member.mention}.."
+        else:
+          user_list[list_index] = f"__#{loop_index}__ **Points: {user_points}** - {member.mention}.."
+        
+
+        loop_index += 1
+        list_index += 1
+
+        if loop_index == 5:
+          break
+      except AttributeError:
+        print(f"Couldn't get the user with the ID {user_id}")
+
+    user_list = str(user_list)
+
+    user_list = user_list.replace("'", "")
+    user_list = user_list.replace(",", "")
+    user_list = user_list.replace("]", "")
+    user_list = user_list.replace("[", "")
+    user_list = user_list.replace("..", "\n")
+
+    leaderboard = discord.Embed(title="Turkey Event Leadboard 🦃",description=user_list)
 
     await ctx.send(embed=leaderboard)
 
