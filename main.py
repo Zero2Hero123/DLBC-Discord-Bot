@@ -57,7 +57,66 @@ async def event_loop():
 
   await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,name=f"🦃ThanksGiving coming in {days_left}!🦃"))
 
-# TASKS LOOPS
+@tasks.loop(hours=24)
+async def data_check():
+  turkey_channel = client.get_channel(896876055942529035)
+  top_user = None
+  
+  today = dt.date.today()
+
+  user_list = [0,1,2,3,4]
+
+  user_data_list = turkey_event_sys.find().sort("turkeys",-1)
+  top_user = user_data_list[0]
+  top_points = top_user["turkeys"]
+  top_user = user_data_list[0]["_id"]
+  top_user = discord.utils.get(client.guilds[0].members, id=top_user)
+
+  loop_index = 1
+  list_index = 0
+
+  for user in user_data_list:
+    try: 
+      
+      user_id = user["_id"]
+      user_points = user["turkeys"]
+      member = discord.utils.get(client.guilds[0].members, id=user_id)
+
+      
+      if loop_index == 1:
+        user_list[list_index] = f"🥇 ** Points: {user_points}** - {member.mention}.."
+      elif loop_index == 2:
+        user_list[list_index] = f"🥈 **Points: {user_points}** - {member.mention}.."
+      elif loop_index == 3:
+        user_list[list_index] = f"🥉 **Points: {user_points}** - {member.mention}.."
+      else:
+        user_list[list_index] = f"__#{loop_index}__ **Points: {user_points}** - {member.mention}.."
+      
+
+      loop_index += 1
+      list_index += 1
+
+      if loop_index == 5:
+        break
+    except AttributeError:
+      print(f"Couldn't get the user with the ID {user_id}")
+
+  user_list = str(user_list)
+
+  user_list = user_list.replace("'", "")
+  user_list = user_list.replace(",", "")
+  user_list = user_list.replace("]", "")
+  user_list = user_list.replace("[", "")
+  user_list = user_list.replace("..", "\n")
+
+  leaderboard = discord.Embed(title="[Current] Turkey Event Leadboard 🦃",description=user_list,color=0x3399ff)
+
+  leaderboard.set_footer(text="Winner Gets 5M Dank Memer Coins!")
+
+  await turkey_channel.send(content=f"HOLY MOLY.👑 {top_user.mention} is on fire! Chillin with `{top_points} Points` so far. Remember, the Event ends this Saturday so grind as much as you can!😎",embed=leaderboard)
+
+  
+
 @tasks.loop(minutes=1)
 async def weekly_words_loop():
   weekly_word_channel = client.get_channel(896880737318498375)
@@ -196,14 +255,13 @@ async def on_ready():
   await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,name="DLBC Baltimore YT"))
 
   weekly_words_loop.start()
-  event_loop.start()
 
 @client.event
 async def on_message(message):
   usher_log = client.get_channel(895826386416193626)
   author = message.author
   bad_word = False
-  muted_role = discord.utils.get(message.guild.roles, name="Muted")
+  muted_role = discord.utils.get(client.guilds[0].roles, name="Muted")
   check_counter = 0
   clown = clown_data.find_one({"_id": 1})
 
@@ -217,7 +275,12 @@ async def on_message(message):
     except:
 
       await message.channel.send(f'{message.author.mention} "{message.content}" - 🤓')
+  
+  if str(message.channel.type) == "private":
 
+    await usher_log.send(embed=discord.Embed(title="DM from a User",description=f"User: {message.author.mention}\nMessage Content:\n{message.content}"))
+
+  
   turkey_user = turkey_event_sys.find_one({"_id": message.author.id})
   if turkey_user == None:
     if not message.author.bot:
@@ -400,19 +463,19 @@ async def on_member_join(member):
   await welcome_channel.send(embed=welcome_embed)
 
   # If member was muted before then..
-  muted_role = discord.utils.get(ctx.guild.roles, name="Muted")
+  muted_role = discord.utils.get(client.guilds[0].roles, name="Muted")
 
   try:
-    user_data = moderation.find_one({"_id": member.id})
+    user_data = moderation_system.find_one({"_id": member.id})
 
-    if user_data["is_muted"]:
+    if user_data["is_muted"] == True:
 
-      uh_oh = discord.Embed(title="Uh Oh!",description="Seems you were muted before you had previously left the server. This is known as evading your punishment so you'll be muted for 10 minutes as a Penalty for leaving when you were previously muted before leaving.",color=0x0099ff)
+      uh_oh = discord.Embed(title="Uh Oh!",description="Seems you were muted before you had previously left the server. This is known as evading your punishment so you'll be muted for 1 hour minutes as a Penalty for leaving when you were previously muted before leaving.",color=0x0099ff)
 
       await member.send(embed=uh_oh)
 
       await member.add_roles(muted_role)
-      await asyncio.sleep(600)
+      await asyncio.sleep(3600)
       await member.remove_roles(muted_role)
 
       await member.send("Your Mute Penalty has expired.")
@@ -671,6 +734,11 @@ async def turk(ctx):
 
   await ctx.send(content=f"{everyone}",embed=event_embed)
   await ctx.message.delete(delay=None)
+
+@client.command(hidden=True)
+async def dm(ctx,member: discord.Member,*,message_content: str):
+
+  await member.send(content=message_content)
 
 keep_alive()
 client.run(os.environ['TOKEN'])
