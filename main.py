@@ -277,8 +277,8 @@ async def on_message(message):
       await message.channel.send(f'{message.author.mention} "{message.content}" - 🤓')
   
   if str(message.channel.type) == "private":
-
-    await usher_log.send(embed=discord.Embed(title="DM from a User",description=f"User: {message.author.mention}\nMessage Content:\n{message.content}"))
+    if message.author != client.user:
+      await usher_log.send(embed=discord.Embed(title="DM from a User",description=f"User: {message.author.mention}\nMessage Content:\n{message.content}"))
 
   
   turkey_user = turkey_event_sys.find_one({"_id": message.author.id})
@@ -413,6 +413,8 @@ async def on_message(message):
       # ==================
 
       if leveled_up:
+        user_data = level_system.find_one({"_id": message.author.id})
+        user_level = user_data["level"]
 
         await message.author.send(f"Congrats {message.author.mention}! You're now level {user_level}.")
 
@@ -739,6 +741,7 @@ async def turk(ctx):
 async def dm(ctx,member: discord.Member,*,message_content: str):
 
   await member.send(content=message_content)
+  await ctx.message.add_reactions("👍")
 
 keep_alive()
 client.run(os.environ['TOKEN'])
