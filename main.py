@@ -22,7 +22,6 @@ moderation_system = db["moderation"]
 weekly_wordsys = db["weekly_words"]
 weekly_word_loop_data = db["weekly_word_data"]
 clown_data = db["clown"]
-turkey_event_sys = db["turkey_event"]
 
 client = ComponentsBot(command_prefix = '.',intents=intents)
 
@@ -56,64 +55,6 @@ async def event_loop():
   days_left = days_left[:6]
 
   await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,name=f"🦃ThanksGiving coming in {days_left}!🦃"))
-
-@tasks.loop(hours=24)
-async def data_check():
-  turkey_channel = client.get_channel(896876055942529035)
-  top_user = None
-  
-  today = dt.date.today()
-
-  user_list = [0,1,2,3,4]
-
-  user_data_list = turkey_event_sys.find().sort("turkeys",-1)
-  top_user = user_data_list[0]
-  top_points = top_user["turkeys"]
-  top_user = user_data_list[0]["_id"]
-  top_user = discord.utils.get(client.guilds[0].members, id=top_user)
-
-  loop_index = 1
-  list_index = 0
-
-  for user in user_data_list:
-    try: 
-      
-      user_id = user["_id"]
-      user_points = user["turkeys"]
-      member = discord.utils.get(client.guilds[0].members, id=user_id)
-
-      
-      if loop_index == 1:
-        user_list[list_index] = f"🥇 ** Points: {user_points}** - {member.mention}.."
-      elif loop_index == 2:
-        user_list[list_index] = f"🥈 **Points: {user_points}** - {member.mention}.."
-      elif loop_index == 3:
-        user_list[list_index] = f"🥉 **Points: {user_points}** - {member.mention}.."
-      else:
-        user_list[list_index] = f"__#{loop_index}__ **Points: {user_points}** - {member.mention}.."
-      
-
-      loop_index += 1
-      list_index += 1
-
-      if loop_index == 5:
-        break
-    except AttributeError:
-      print(f"Couldn't get the user with the ID {user_id}")
-
-  user_list = str(user_list)
-
-  user_list = user_list.replace("'", "")
-  user_list = user_list.replace(",", "")
-  user_list = user_list.replace("]", "")
-  user_list = user_list.replace("[", "")
-  user_list = user_list.replace("..", "\n")
-
-  leaderboard = discord.Embed(title="[Current] Turkey Event Leadboard 🦃",description=user_list,color=0x3399ff)
-
-  leaderboard.set_footer(text="Winner Gets 5M Dank Memer Coins!")
-
-  await turkey_channel.send(content=f"HOLY MOLY.👑 {top_user.mention} is on fire! Chillin with `{top_points} Points` so far. Remember, the Event ends this Saturday so grind as much as you can!😎",embed=leaderboard)
 
   
 
@@ -279,19 +220,6 @@ async def on_message(message):
   if str(message.channel.type) == "private":
     if message.author != client.user:
       await usher_log.send(embed=discord.Embed(title="DM from a User",description=f"User: {message.author.mention}\nMessage Content:\n{message.content}"))
-
-  
-  turkey_user = turkey_event_sys.find_one({"_id": message.author.id})
-  if turkey_user == None:
-    if not message.author.bot:
-      post = {"_id": message.author.id, "turkeys": 0}
-      turkey_event_sys.insert_one(post)
-
-      print(f"Added {message.author} to Turkey Event.")
-
-  if "🦃" in message.content:
-    turkey_event_sys.update_one({"_id": message.author.id}, {"$inc": {"turkeys": 1}})
-    print(f"{message.author}'s turkeys has += 1")
   
   # If the user is not a bot, then check if their message had a bad word in it.
   if not message.author.bot:
