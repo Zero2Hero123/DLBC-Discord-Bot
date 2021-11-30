@@ -255,38 +255,37 @@ async def on_message(message):
       moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
       moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
 
-    if check_counter == 3:
-      for word in bad_words:
+    for word in bad_words:
 
-        if word in message.content: 
-          bad_word = True
+      if word in message.content: 
+        bad_word = True
+        
+
+        if bad_word:
+          moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
+          moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
+
+          user_mod_data = moderation_system.find_one({"_id": message.author.id})
+          warns = user_mod_data["warnings"]
+          triggered_content = message.content
+          await message.delete(delay=None)
+
+          triggered_word = word
+          response = await message.channel.send(f"{message.author.mention} 🚫 Profanity is not allowed. This is your **#{warns}** warning.")
+
+          bad_word_embed = discord.Embed(title="🚫 Bad Word Triggered",description=f"Bad Word: `{triggered_word}` was triggered by **{author}**({author.mention})").set_thumbnail(url=author.avatar_url)
           
+          bad_word_embed.add_field(name="Message Content:",value=f"```{triggered_content}```",inline=False)
 
-          if bad_word:
-            moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
-            moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
+          bad_word_embed.timestamp = dt.datetime.utcnow()
+          bad_word_embed.set_footer(text="AUTOMOD")
 
-            user_mod_data = moderation_system.find_one({"_id": message.author.id})
-            warns = user_mod_data["warnings"]
-            triggered_content = message.content
-            await message.delete(delay=None)
+          await usher_log.send(embed=bad_word_embed)
 
-            triggered_word = word
-            response = await message.channel.send(f"{message.author.mention} 🚫 Profanity is not allowed. This is your **#{warns}** warning.")
-
-            bad_word_embed = discord.Embed(title="🚫 Bad Word Triggered",description=f"Bad Word: `{triggered_word}` was triggered by **{author}**({author.mention})").set_thumbnail(url=author.avatar_url)
-            
-            bad_word_embed.add_field(name="Message Content:",value=f"```{triggered_content}```",inline=False)
-
-            bad_word_embed.timestamp = dt.datetime.utcnow()
-            bad_word_embed.set_footer(text="AUTOMOD")
-
-            await usher_log.send(embed=bad_word_embed)
-
-            await response.delete(delay=5)
+          await response.delete(delay=5)
 
 
-            # Check if their they have more than 3 warns.
+          # Check if their they have more than 3 warns.
   if not message.author.bot:
     max_warns = 3
     user_mod_data = moderation_system.find_one({"_id": message.author.id})
