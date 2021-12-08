@@ -495,6 +495,20 @@ async def on_button_click(interaction):
 
       await interaction.send("Added Praise & Worship Role. You may dismiss the message above.")
 
+  if interaction.custom_id == "stats":
+
+    user_event_data = christmas_event_data.find_one({ "_id": interaction.user.id})
+    if user_event_data == None: # If the person isnt in the database
+      if not message.author.bot:
+        post = {"_id": message.author.id, "presents": 0}
+        christmas_event_data.insert_one(post)
+
+        print(f"Added {message.author} to Holiday Event System.")
+
+    how_many = user_event_data["presents"]
+
+    await interaction.send(f"🎅 Ho Ho Ho..\nYou have delivered {how_many}/500 presents so far.")
+
 @client.event
 async def on_message_delete(message):
   usher_log = client.get_channel(895826386416193626)
@@ -666,11 +680,11 @@ async def giftevent(ctx):
 
   event_embed = discord.Embed(title="☃️Christmas Holiday Event❄️",color=0x99ccff)
 
-  event_embed.add_field(name="**'Tis The Season To Be Jolly...**:",value="Ho Ho Ho!🎅\nHello there user, I have a lot of presents to deliver this coming holiday. I need you to help me deliver them. Deliver 250 presents by Christmas Day and I'll give you 8,000,000 (Dank Memer Coins).\n\n`.deliver` command - Deliver Presents\n\nYou start with 250 presents. First person to deliver 250 presents by Christmas Day gets 8M Coins. Ho Ho Ho..Good luck. 🎅")
+  event_embed.add_field(name="**'Tis The Season To Be Jolly...**:",value="Ho Ho Ho!🎅\nHello there user, I have a lot of presents to deliver this coming holiday. I need you to help me deliver them. Deliver 500 presents by Christmas Day and I'll give you 8,000,000 (Dank Memer Coins).\n\n`.deliver` command - Deliver Presents\n\nYou start with 500 presents. First person to deliver 500 presents by Christmas Day gets 8M Coins.\nHo Ho Ho..Good luck. 🎅")
   event_embed.set_footer(text="😊 Message Sent from the North Pole")
 
   await ctx.send(
-    content=f"none",
+    content=f"{everyone}",
     embed=event_embed,
     components = [
       [

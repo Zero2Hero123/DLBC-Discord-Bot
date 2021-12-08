@@ -135,10 +135,20 @@ class Leveling(commands.Cog):
   @commands.cooldown(1,10.0,commands.BucketType.user)
   async def deliver(self,ctx):
     
-    possible_outcomes = [1,1,2,3]
+    possible_outcomes = [1,1,2]
     amount = random.randint(1,2)
 
-    outcome = random.randint(1,4)
+    outcome = random.randint(1,2)
+
+    fail_messages = {
+      "1": {"message": "On your way, you fell & tripped over the edge of a cliff and died", "quip": "lol"},
+      "2": {"message": "You were on your way to deliver a present but got lost.", "quip": "Imagine getting lost"},
+      "3": {"message": "You crossed the road without looking just to get run over by a car.", "quip": "oof"},
+      "4": {"message": "Some guy jumped you and took the present you were delivering. They ran off with a PS5.", "quip": "bruh moment"}
+    }
+
+    fail_message_int = random.randint(1,4)
+    fail_message = fail_messages[str(fail_message_int)]
 
     if outcome == 1:
 
@@ -148,33 +158,22 @@ class Leveling(commands.Cog):
         outcome_embed = discord.Embed(description=f"You successfully delivered {amount} present(s). \n`+{amount}` 🎁",color=0x99ccff)
 
         outcome_embed.set_author(name="Outcome:")
-        outcome_embed.set_footer(text="Congrats Mate 👍")
+        outcome_embed.set_footer(text="Congrats Mate 👍 | Succeed: 50%; Fail: 50%")
 
         await ctx.reply(embed=outcome_embed)
       except:
         print(f"Couldn't find the user {ctx.message.author}")
     elif outcome == 2:
 
-      outcome_embed = discord.Embed(description=f"On you way, you fell tripped over the edge of a cliff and died",color=0x99ccff)
+      fail_text = fail_message["message"]
+      fail_quip = fail_message["quip"]
+
+      outcome_embed = discord.Embed(description=f"{fail_text}",color=0x99ccff)
 
       outcome_embed.set_author(name="Outcome:")
-      outcome_embed.set_footer(text="L")
+      outcome_embed.set_footer(text=f"{fail_quip} | Succeed: 50%; Fail: 50%")
 
       await ctx.reply(embed=outcome_embed)
-    elif outcome == 3:
-      
-      outcome_embed = discord.Embed(description=f"You were on your way to deliver a present but got lost.",color=0x99ccff)
-
-      outcome_embed.set_author(name="Outcome:")
-      outcome_embed.set_footer(text="Imagine getting lost 🤡")
-
-      await ctx.reply(embed=outcome_embed)
-    elif outcome == 4:
-
-      outcome_embed = discord.Embed(description=f"You crossed the road without looking just to get run over by a car.",color=0x99ccff)
-
-      outcome_embed.set_author(name="Outcome:")
-      outcome_embed.set_footer(text="oof")
 
 
 
