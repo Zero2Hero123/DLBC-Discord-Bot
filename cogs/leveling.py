@@ -136,7 +136,7 @@ class Leveling(commands.Cog):
   async def deliver(self,ctx):
     
     possible_outcomes = [1,1,2]
-    amount = random.randint(1,2)
+    amount = random.randint(1,7)
 
     outcome = random.randint(1,2)
 
