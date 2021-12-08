@@ -22,6 +22,7 @@ moderation_system = db["moderation"]
 weekly_wordsys = db["weekly_words"]
 weekly_word_loop_data = db["weekly_word_data"]
 clown_data = db["clown"]
+christmas_event_data = db["christmas"]
 
 client = ComponentsBot(command_prefix = '.',intents=intents)
 
@@ -242,6 +243,14 @@ async def on_message(message):
           if msg.content == check_txt:
             check_counter += 1
     
+    user_event_data = christmas_event_data.find_one({"_id": message.author.id})
+    if user_event_data == None: # If the person isnt in the database
+      if not message.author.bot:
+        post = {"_id": message.author.id, "presents": 0}
+        christmas_event_data.insert_one(post)
+
+        print(f"Added {message.author} to Holiday Event System.")
+    
     # If the user has the same message 3 times then...
     if check_counter == 3:
       for msg in last_3_messages:
@@ -421,11 +430,11 @@ async def on_command_error(ctx,error):
 
   if isinstance(error, commands.CommandOnCooldown):
 
-    cooldown = error.retry_after / 60
+    cooldown = error.retry_after
 
     cooldown = round(cooldown, 2)
 
-    response = await ctx.reply(content=f"This command is on cooldown. Try again in **{int(cooldown)}** minutes(s).")
+    response = await ctx.reply(content=f"This command is on cooldown. Try again in **{int(cooldown)}** seconds(s).")
 
     await response.delete(delay=5)
   elif isinstance(error, commands.BadArgument):
@@ -652,16 +661,26 @@ async def event(ctx):
   await ctx.message.delete(delay=None)
 
 @client.command(hidden=True)
-async def turk(ctx):
+async def giftevent(ctx):
   everyone = ctx.guild.default_role
 
-  event_embed = discord.Embed(title="🦃LIMITED-TIME Thankgiving Turkey Event🦃",color=0xff9933)
-  event_embed.add_field(name="**How It Works**:",value="When you send a Message in the Server containing a 🦃 Emoji, you get `+1 Turkey Points`.\n\nAnother way to get Turkey Points is by getting pinned messages in #counting, which rewards you with ``+5 Turkey Points``.\n\nWhoever has the most points by <t:1637989200:D> recieves the Ultimate Prize of `5,000,000` Dank Memer Coins!\nGood luck :)",inline=False)
-  event_embed.add_field(name="**Tip**:",value="You can check how many points you have by using the ``.stats`` command, as well as check how many other people have by using the ``.turkeylb`` command.")
-  event_embed.set_footer(text="Event Created as Contribution to Server Activity")
-  event_embed.timestamp = dt.datetime.utcnow()
+  event_embed = discord.Embed(title="☃️Christmas Holiday Event❄️",color=0x99ccff)
 
-  await ctx.send(content=f"{everyone}",embed=event_embed)
+  event_embed.add_field(name="**'Tis The Season To Be Jolly...**:",value="Ho Ho Ho!🎅\nHello there user, I have a lot of presents to deliver this coming holiday. I need you to help me deliver them. Deliver 250 presents by Christmas Day and I'll give you 8,000,000 (Dank Memer Coins).\n\n`.deliver` command - Deliver Presents\n\nYou start with 250 presents. First person to deliver 250 presents by Christmas Day gets 8M Coins. Ho Ho Ho..Good luck. 🎅")
+  event_embed.set_footer(text="😊 Message Sent from the North Pole")
+
+  await ctx.send(
+    content=f"none",
+    embed=event_embed,
+    components = [
+      [
+        Button(label="Check my Stats", custom_id="stats"),
+        Button(label="Check leaderboard", custom_id="lb", disabled=True)
+      ]
+    ]
+  )
+  
+  
   await ctx.message.delete(delay=None)
 
 @client.command(hidden=True)

@@ -3,6 +3,7 @@ from discord.ext import commands
 import asyncio
 import datetime as dt
 import json
+import random
 from pymongo import MongoClient
 
 cluster = MongoClient("mongodb+srv://crazen:Vf1b3hXAphxvbdur@dlbcserver.5a3ea.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
@@ -10,6 +11,7 @@ db = cluster["members"]
 level_system = db["levels"]
 weekly_wordsys = db["weekly_words"]
 moderation_system = db["moderation"]
+christmas_event_data = db["christmas"]
 
 class Leveling(commands.Cog):
 
@@ -128,6 +130,52 @@ class Leveling(commands.Cog):
     leaderboard = discord.Embed(title="Top 10 Highest Level Users",description=user_list)
 
     await ctx.send(embed=leaderboard)
+
+  @commands.command()
+  @commands.cooldown(1,10.0,commands.BucketType.user)
+  async def deliver(self,ctx):
+    
+    possible_outcomes = [1,1,2,3]
+    amount = random.randint(1,2)
+
+    outcome = random.randint(1,4)
+
+    if outcome == 1:
+
+      try:
+        christmas_event_data.update_one({"_id": ctx.message.author.id}, {"$inc": {"presents": amount}})
+
+        outcome_embed = discord.Embed(description=f"You successfully delivered {amount} present(s). \n`+{amount}` 🎁",color=0x99ccff)
+
+        outcome_embed.set_author(name="Outcome:")
+        outcome_embed.set_footer(text="Congrats Mate 👍")
+
+        await ctx.reply(embed=outcome_embed)
+      except:
+        print(f"Couldn't find the user {ctx.message.author}")
+    elif outcome == 2:
+
+      outcome_embed = discord.Embed(description=f"On you way, you fell tripped over the edge of a cliff and died",color=0x99ccff)
+
+      outcome_embed.set_author(name="Outcome:")
+      outcome_embed.set_footer(text="L")
+
+      await ctx.reply(embed=outcome_embed)
+    elif outcome == 3:
+      
+      outcome_embed = discord.Embed(description=f"You were on your way to deliver a present but got lost.",color=0x99ccff)
+
+      outcome_embed.set_author(name="Outcome:")
+      outcome_embed.set_footer(text="Imagine getting lost 🤡")
+
+      await ctx.reply(embed=outcome_embed)
+    elif outcome == 4:
+
+      outcome_embed = discord.Embed(description=f"You crossed the road without looking just to get run over by a car.",color=0x99ccff)
+
+      outcome_embed.set_author(name="Outcome:")
+      outcome_embed.set_footer(text="oof")
+
 
 
 
