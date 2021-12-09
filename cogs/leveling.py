@@ -132,11 +132,11 @@ class Leveling(commands.Cog):
     await ctx.send(embed=leaderboard)
 
   @commands.command()
-  @commands.cooldown(1,10.0,commands.BucketType.user)
+  @commands.cooldown(1,13.5,commands.BucketType.user)
   async def deliver(self,ctx):
     
-    possible_outcomes = [1,1,2]
-    amount = random.randint(1,7)
+    possible_outcomes = [1,2]
+    amount = random.randint(1,4)
 
     outcome = random.randint(1,2)
 
