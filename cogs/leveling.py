@@ -5,6 +5,10 @@ import datetime as dt
 import json
 import random
 from pymongo import MongoClient
+import sys, os
+
+sys.path.append(os.path.abspath(os.path.join('..', 'christmas')))
+from christmas import *
 
 cluster = MongoClient("mongodb+srv://crazen:Vf1b3hXAphxvbdur@dlbcserver.5a3ea.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 db = cluster["members"]
@@ -13,11 +17,59 @@ weekly_wordsys = db["weekly_words"]
 moderation_system = db["moderation"]
 christmas_event_data = db["christmas"]
 
-class Leveling(commands.Cog):
+
+
+class Leveling(commands.Cog): 
 
   def __init__(self,client):
 
     self.client = client
+
+  async def fight(self,ctx):
+    boss_health = 100
+    stolen = 0
+    seconds_left = 100.0
+    won = False
+
+    milestones = [5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]
+
+    grinch_info = discord.Embed(title="Defeat The Grinch! 🎁",description=f"<:grinch_grin:918888521790541925> **Health**: {boss_health}/100\n**Presents Stolen**: {stolen}\n**Seconds Left**: {seconds_left}s (Time left to stop him)",color=0x009933)
+    
+    info_msg = await ctx.send(embed=grinch_info)
+    await ctx.send("**Tip**:\nType `punch` to deal damage to the The Grinch.")
+
+    def check(m):
+      return m.author == ctx.author and  m.content == "punch"
+    
+    while seconds_left != 0:
+      while boss_health > 0:
+
+        try:
+          msg = await self.client.wait_for('message', check=check,timeout=2.0)
+
+          if msg != None:
+            boss_health -= random.randint(5,7)
+
+          await info_msg.edit(embed=grinch_info)
+        except asyncio.TimeoutError:
+          pass
+      
+        seconds_left -= 2.0
+        if int(seconds_left) in milestones:
+          stolen += random.randint(1,2)
+
+        grinch_info = discord.Embed(title="Defeat The Grinch! 🎁",description=f"The longer he lives, the more presents he steals.\n\n<:grinch_grin:918888521790541925> **Health**: {boss_health}/100\n **Presents Stolen**: {stolen}\n**Seconds Left**: {seconds_left}s (Time left to stop him)",color=0x009933)
+
+        await info_msg.edit(embed=grinch_info)
+        #await asyncio.sleep(1)
+        break
+    
+    if boss_health == 0:
+      won = True
+    else:
+      won = False
+    
+    return {"won": won, "stolen": stolen}
     
   @commands.command()
   async def stats(self,ctx, user: discord.Member=None):
@@ -135,10 +187,10 @@ class Leveling(commands.Cog):
   @commands.cooldown(1,13.5,commands.BucketType.user)
   async def deliver(self,ctx):
     
-    possible_outcomes = [1,2]
+    possible_outcomes = [1,1,2,2,3] # 1,2
     amount = random.randint(1,4)
 
-    outcome = random.randint(1,2)
+    outcome = random.randint(1,3)
 
     fail_messages = {
       "1": {"message": "On your way, you fell & tripped over the edge of a cliff and died", "quip": "lol"},
@@ -158,7 +210,7 @@ class Leveling(commands.Cog):
         outcome_embed = discord.Embed(description=f"You successfully delivered {amount} present(s). \n`+{amount}` 🎁",color=0x99ccff)
 
         outcome_embed.set_author(name="Outcome:")
-        outcome_embed.set_footer(text="Congrats Mate 👍 | Succeed: 50%; Fail: 50%")
+        outcome_embed.set_footer(text="Nice | Succeed: 60%; Fail: 60%; ???: 20%")
 
         await ctx.reply(embed=outcome_embed)
       except:
@@ -171,13 +223,53 @@ class Leveling(commands.Cog):
       outcome_embed = discord.Embed(description=f"{fail_text}",color=0x99ccff)
 
       outcome_embed.set_author(name="Outcome:")
-      outcome_embed.set_footer(text=f"{fail_quip} | Succeed: 50%; Fail: 50%")
+      outcome_embed.set_footer(text=f"{fail_quip} | Succeed: 60%; Fail: 60%; ???: 20%")
 
       await ctx.reply(embed=outcome_embed)
+    
+    elif outcome == 3:
+      boss_health = 100
 
+      grinch_text = "**Huh? What's This?**\nThe Grinch <:grinch_grin:918888521790541925> : Well well. All these children seem to having fun..a little too much fun. Let's change that, shall we?\n\n"
 
+      santa_text = "**Oh No!**\nSanta 🎅 : The Grinch is trying to steal presents from the children! You have stop Him!\n"
 
+      grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
+      grinch_embed.set_author(name="Outcome?")
+      grinch_embed.set_footer(text="Muhaahahaaa")
 
+      santa_embed = discord.Embed(description=f"{santa_text}",color=0xcc3300)
+      santa_embed.set_author(name="Outcome?")
+      santa_embed.set_footer(text="Ho Ho Ho")
+
+      await asyncio.sleep(0.1)
+      
+      await ctx.reply(embed=grinch_embed)
+      await asyncio.sleep(5.5)
+      await ctx.reply(embed=santa_embed)
+      await asyncio.sleep(3.25)
+
+      fight_task = asyncio.create_task(self.fight(ctx))
+      result = await fight_task
+
+      if not result["won"]:
+        
+        presents_stolen = result["stolen"]
+
+        christmas_event_data.update_one({"_id": ctx.message.author.id}, {"$inc": {"presents": -presents_stolen}})
+
+        grinch_text = f"**Fail**\n<:grinch_grin:918888521790541925> : Looks like I win! I even managed to get {presents_stolen} present(s) from you. lol\n"
+      else:
+        resents_stolen = result["stolen"]
+
+        grinch_text = f"**Success**\n<:grinch_grin:918888521790541925> : Sigh. At-least I was able to get {presents_stolen} present(s). I'll be back when you least expect it! Hehe >:)\n"
+      
+      grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
+      grinch_embed.set_author(name="Outcome?")
+      grinch_embed.set_footer(text="Muhaahahaaa")
+
+      await ctx.reply(embed=grinch_embed)
+  
 
 def setup(client):
   client.add_cog(Leveling(client))

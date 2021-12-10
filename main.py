@@ -251,6 +251,7 @@ async def on_message(message):
 
         print(f"Added {message.author} to Holiday Event System.")
     
+    """
     # If the user has the same message 3 times then...
     if check_counter == 3:
       for msg in last_3_messages:
@@ -263,6 +264,7 @@ async def on_message(message):
 
       moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
       moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
+    """
 
     for word in bad_words:
 
@@ -702,6 +704,34 @@ async def dm(ctx,member: discord.Member,*,message_content: str):
 
   await member.send(content=message_content)
   await ctx.message.add_reactions("👍")
+
+
+async def timer(ctx):
+
+  c = 10
+
+  while c > 0:
+    await ctx.send(f"{c}")
+    await asyncio.sleep(1)
+
+    c -= 1
+  
+  return "finished"
+
+async def ask(ctx):
+
+  await ctx.send("hmmm")
+
+@client.command()
+async def qt(ctx):
+
+  task = asyncio.create_task(timer(ctx))
+  task1 = asyncio.create_task(ask(ctx))
+
+  await ctx.send("how is your day?")
+  done = await task
+
+  await ctx.send(done)
 
 keep_alive()
 client.run(os.environ['TOKEN'])

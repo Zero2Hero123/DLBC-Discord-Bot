@@ -31,12 +31,7 @@ def add_exp(user_id: int,exp: int):
 
   return leveled_up
 
-
-
-      
-
-
-
+# CHRISTMAS EVENT STUFF
 
 
   
