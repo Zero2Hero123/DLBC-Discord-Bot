@@ -40,9 +40,9 @@ class Leveling(commands.Cog):
     await ctx.send("**Tip**:\nType `punch` to deal damage to the The Grinch.")
 
     def check(m):
-      return m.author == ctx.author and  m.content == "punch"
+      return m.author == ctx.author and  m.content == "punch" or m.content == "Punch"
     
-    while seconds_left != 0:
+    while seconds_left > 0:
       while boss_health > 0:
 
         try:
@@ -191,7 +191,7 @@ class Leveling(commands.Cog):
     possible_outcomes = [1,1,2,2,3] # 1,2
     amount = random.randint(1,4)
 
-    outcome = random.randint(1,3)
+    outcome = random.choice(possible_outcomes)
 
     fail_messages = {
       "1": {"message": "On your way, you fell & tripped over the edge of a cliff and died", "quip": "lol"},
@@ -260,16 +260,23 @@ class Leveling(commands.Cog):
         christmas_event_data.update_one({"_id": ctx.message.author.id}, {"$inc": {"presents": -presents_stolen}})
 
         grinch_text = f"**Fail**\n<:grinch_grin:918888521790541925> : Looks like I win! I even managed to get {presents_stolen} present(s) from you. lol\n"
+
+        grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
+        grinch_embed.set_author(name="Outcome?")
+        grinch_embed.set_footer(text="Muhaahahaaa")
+
+        await ctx.reply(embed=grinch_embed)
+
       else:
-        resents_stolen = result["stolen"]
+        presents_stolen = result["stolen"]
 
         grinch_text = f"**Success**\n<:grinch_grin:918888521790541925> : Sigh. At-least I was able to get {presents_stolen} present(s). I'll be back when you least expect it! Hehe >:)\n"
       
-      grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
-      grinch_embed.set_author(name="Outcome?")
-      grinch_embed.set_footer(text="Muhaahahaaa")
+        grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
+        grinch_embed.set_author(name="Outcome?")
+        grinch_embed.set_footer(text="Muhaahahaaa")
 
-      await ctx.reply(embed=grinch_embed)
+        await ctx.reply(embed=grinch_embed)
   
 
 def setup(client):
