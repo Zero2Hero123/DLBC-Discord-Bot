@@ -26,6 +26,7 @@ class Leveling(commands.Cog):
     self.client = client
 
   async def fight(self,ctx):
+    await asyncio.sleep(1)
     boss_health = 100
     stolen = 0
     seconds_left = 100.0
@@ -184,7 +185,7 @@ class Leveling(commands.Cog):
     await ctx.send(embed=leaderboard)
 
   @commands.command()
-  @commands.cooldown(1,13.5,commands.BucketType.user)
+  @commands.cooldown(1,7.5,commands.BucketType.user)
   async def deliver(self,ctx):
     
     possible_outcomes = [1,1,2,2,3] # 1,2
@@ -247,7 +248,7 @@ class Leveling(commands.Cog):
       await ctx.reply(embed=grinch_embed)
       await asyncio.sleep(5.5)
       await ctx.reply(embed=santa_embed)
-      await asyncio.sleep(3.25)
+      await asyncio.sleep(3.5)
 
       fight_task = asyncio.create_task(self.fight(ctx))
       result = await fight_task

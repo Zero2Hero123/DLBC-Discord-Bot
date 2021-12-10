@@ -700,38 +700,23 @@ async def giftevent(ctx):
   await ctx.message.delete(delay=None)
 
 @client.command(hidden=True)
+async def oh(ctx):
+  everyone = ctx.guild.default_role
+
+  event_embed = discord.Embed(color=0xcc3300)
+
+  event_embed.add_field(name="**NOTICE**:",value="Ho Ho Ho.🎅\nJust wanted to warn you that _The Grinch_ has been spotted somewhere nearby. Stay sharp when you `.deliver` a present. He may be lurking somewhere. 👀")
+  event_embed.set_footer(text="Watch out.")
+  event_embed.set_author(name="From Santa:")
+
+  await ctx.send(content=f"{everyone}",embed=event_embed)
+  await ctx.message.delete(delay=None)
+
+@client.command(hidden=True)
 async def dm(ctx,member: discord.Member,*,message_content: str):
 
   await member.send(content=message_content)
   await ctx.message.add_reactions("👍")
-
-
-async def timer(ctx):
-
-  c = 10
-
-  while c > 0:
-    await ctx.send(f"{c}")
-    await asyncio.sleep(1)
-
-    c -= 1
-  
-  return "finished"
-
-async def ask(ctx):
-
-  await ctx.send("hmmm")
-
-@client.command()
-async def qt(ctx):
-
-  task = asyncio.create_task(timer(ctx))
-  task1 = asyncio.create_task(ask(ctx))
-
-  await ctx.send("how is your day?")
-  done = await task
-
-  await ctx.send(done)
 
 keep_alive()
 client.run(os.environ['TOKEN'])
