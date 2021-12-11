@@ -65,7 +65,7 @@ class Leveling(commands.Cog):
         #await asyncio.sleep(1)
         break
     
-    if boss_health == 0:
+    if boss_health <= 0:
       won = True
     else:
       won = False
@@ -188,7 +188,7 @@ class Leveling(commands.Cog):
   @commands.cooldown(1,7.5,commands.BucketType.user)
   async def deliver(self,ctx):
     
-    possible_outcomes = [1,1,2,2,3] # 1,2
+    possible_outcomes = [1,2] # 1,2
     amount = random.randint(1,4)
 
     outcome = random.choice(possible_outcomes)
@@ -211,7 +211,7 @@ class Leveling(commands.Cog):
         outcome_embed = discord.Embed(description=f"You successfully delivered {amount} present(s). \n`+{amount}` 🎁",color=0x99ccff)
 
         outcome_embed.set_author(name="Outcome:")
-        outcome_embed.set_footer(text="Nice | Succeed: 60%; Fail: 60%; ???: 20%")
+        outcome_embed.set_footer(text="Nice | Succeed: 50%; Fail: 50%; Grinch: 0%")
 
         await ctx.reply(embed=outcome_embed)
       except:
@@ -224,7 +224,7 @@ class Leveling(commands.Cog):
       outcome_embed = discord.Embed(description=f"{fail_text}",color=0x99ccff)
 
       outcome_embed.set_author(name="Outcome:")
-      outcome_embed.set_footer(text=f"{fail_quip} | Succeed: 60%; Fail: 60%; ???: 20%")
+      outcome_embed.set_footer(text=f"{fail_quip} | Succeed: 50%; Fail: 50%; Grinch: 0%")
 
       await ctx.reply(embed=outcome_embed)
     
@@ -252,6 +252,8 @@ class Leveling(commands.Cog):
 
       fight_task = asyncio.create_task(self.fight(ctx))
       result = await fight_task
+
+      
 
       if not result["won"]:
         
