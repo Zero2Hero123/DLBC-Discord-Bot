@@ -15,6 +15,10 @@ import pymongo
 from pymongo import MongoClient
 from utils import *
 
+#image stuff
+from PIL import Image
+from io import BytesIO
+
 cluster = MongoClient("mongodb+srv://crazen:Vf1b3hXAphxvbdur@dlbcserver.5a3ea.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 db = cluster["members"]
 level_system = db["levels"]
@@ -22,7 +26,6 @@ moderation_system = db["moderation"]
 weekly_wordsys = db["weekly_words"]
 weekly_word_loop_data = db["weekly_word_data"]
 clown_data = db["clown"]
-christmas_event_data = db["christmas"]
 
 client = ComponentsBot(command_prefix = '.',intents=intents)
 
@@ -497,19 +500,10 @@ async def on_button_click(interaction):
 
       await interaction.send("Added Praise & Worship Role. You may dismiss the message above.")
 
-  if interaction.custom_id == "stats":
 
-    user_event_data = christmas_event_data.find_one({ "_id": interaction.user.id})
-    if user_event_data == None: # If the person isnt in the database
-      if not message.author.bot:
-        post = {"_id": message.author.id, "presents": 0}
-        christmas_event_data.insert_one(post)
+        
 
-        print(f"Added {message.author} to Holiday Event System.")
 
-    how_many = user_event_data["presents"]
-
-    await interaction.send(f"🎅 Ho Ho Ho..\nYou have delivered {how_many}/500 presents so far.")
 
 @client.event
 async def on_message_delete(message):
@@ -524,6 +518,24 @@ async def on_message_delete(message):
 
 
   await usher_log.send(embed=deleted_embed)
+
+  if len(message.attachments) != 0:
+
+    if str(message.attachments[0].content_type) == "image/jpeg" or str(message.attachments[0].content_type) == "video/mp4":
+
+      all_files = []
+
+      for attachment in message.attachments:
+        
+        att = await attachment.to_file()
+
+        all_files.append(att)
+
+        await usher_log.send(content="**Attached File**:\n",files=all_files)
+
+
+
+
 
 
 # COMMANDS
@@ -691,7 +703,7 @@ async def giftevent(ctx):
     components = [
       [
         Button(label="Check my Stats", custom_id="stats"),
-        Button(label="Check leaderboard", custom_id="lb", disabled=True)
+        Button(label="Check leaderboard", custom_id="eventlb")
       ]
     ]
   )
@@ -699,18 +711,18 @@ async def giftevent(ctx):
   
   await ctx.message.delete(delay=None)
 
-@client.command(hidden=True)
-async def oh(ctx):
-  everyone = ctx.guild.default_role
+# @client.command(hidden=True)
+# async def oh(ctx):
+#   everyone = ctx.guild.default_role
 
-  event_embed = discord.Embed(color=0xcc3300)
+#   event_embed = discord.Embed(color=0xcc3300)
 
-  event_embed.add_field(name="**NOTICE**:",value="Ho Ho Ho.🎅\nJust wanted to warn you that _The Grinch_ has been spotted somewhere nearby. Stay sharp when you `.deliver` a present. He may be lurking somewhere. 👀")
-  event_embed.set_footer(text="Watch out.")
-  event_embed.set_author(name="From Santa:")
+#   event_embed.add_field(name="**NOTICE**:",value="Ho Ho Ho.🎅\nJust wanted to warn you that _The Grinch_ has been spotted somewhere nearby. Stay sharp when you `.deliver` a present. He may be lurking somewhere. 👀")
+#   event_embed.set_footer(text="Watch out.")
+#   event_embed.set_author(name="From Santa:")
 
-  await ctx.send(content=f"{everyone}",embed=event_embed)
-  await ctx.message.delete(delay=None)
+#   await ctx.send(content=f"{everyone}",embed=event_embed)
+#   await ctx.message.delete(delay=None)
 
 @client.command(hidden=True)
 async def dm(ctx,member: discord.Member,*,message_content: str):

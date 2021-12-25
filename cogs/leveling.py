@@ -5,17 +5,12 @@ import datetime as dt
 import json
 import random
 from pymongo import MongoClient
-import sys, os
-
-sys.path.append(os.path.abspath(os.path.join('..', 'christmas')))
-from christmas import *
 
 cluster = MongoClient("mongodb+srv://crazen:Vf1b3hXAphxvbdur@dlbcserver.5a3ea.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 db = cluster["members"]
 level_system = db["levels"]
 weekly_wordsys = db["weekly_words"]
 moderation_system = db["moderation"]
-christmas_event_data = db["christmas"]
 
 
 
@@ -184,101 +179,101 @@ class Leveling(commands.Cog):
 
     await ctx.send(embed=leaderboard)
 
-  @commands.command()
-  @commands.cooldown(1,7.5,commands.BucketType.user)
-  async def deliver(self,ctx):
+  # @commands.command()
+  # @commands.cooldown(1,7.5,commands.BucketType.user)
+  # async def deliver(self,ctx):
     
-    possible_outcomes = [1,2] # 1,2
-    amount = random.randint(1,4)
+  #   possible_outcomes = [1,2] # 1,2
+  #   amount = random.randint(1,4)
 
-    outcome = random.choice(possible_outcomes)
+  #   outcome = random.choice(possible_outcomes)
 
-    fail_messages = {
-      "1": {"message": "On your way, you fell & tripped over the edge of a cliff and died", "quip": "lol"},
-      "2": {"message": "You were on your way to deliver a present but got lost.", "quip": "Imagine getting lost"},
-      "3": {"message": "You crossed the road without looking just to get run over by a car.", "quip": "oof"},
-      "4": {"message": "Some guy jumped you and took the present you were delivering. They ran off with a PS5.", "quip": "bruh moment"}
-    }
+  #   fail_messages = {
+  #     "1": {"message": "On your way, you fell & tripped over the edge of a cliff and died", "quip": "lol"},
+  #     "2": {"message": "You were on your way to deliver a present but got lost.", "quip": "Imagine getting lost"},
+  #     "3": {"message": "You crossed the road without looking just to get run over by a car.", "quip": "oof"},
+  #     "4": {"message": "Some guy jumped you and took the present you were delivering. They ran off with a PS5.", "quip": "bruh moment"}
+  #   }
 
-    fail_message_int = random.randint(1,4)
-    fail_message = fail_messages[str(fail_message_int)]
+  #   fail_message_int = random.randint(1,4)
+  #   fail_message = fail_messages[str(fail_message_int)]
 
-    if outcome == 1:
+  #   if outcome == 1:
 
-      try:
-        christmas_event_data.update_one({"_id": ctx.message.author.id}, {"$inc": {"presents": amount}})
+  #     try:
+  #       christmas_event_data.update_one({"_id": ctx.message.author.id}, {"$inc": {"presents": amount}})
 
-        outcome_embed = discord.Embed(description=f"You successfully delivered {amount} present(s). \n`+{amount}` 🎁",color=0x99ccff)
+  #       outcome_embed = discord.Embed(description=f"You successfully delivered {amount} present(s). \n`+{amount}` 🎁",color=0x99ccff)
 
-        outcome_embed.set_author(name="Outcome:")
-        outcome_embed.set_footer(text="Nice | Succeed: 50%; Fail: 50%; Grinch: 0%")
+  #       outcome_embed.set_author(name="Outcome:")
+  #       outcome_embed.set_footer(text="Nice | Succeed: 50%; Fail: 50%; Grinch: 0%")
 
-        await ctx.reply(embed=outcome_embed)
-      except:
-        print(f"Couldn't find the user {ctx.message.author}")
-    elif outcome == 2:
+  #       await ctx.reply(embed=outcome_embed)
+  #     except:
+  #       print(f"Couldn't find the user {ctx.message.author}")
+  #   elif outcome == 2:
 
-      fail_text = fail_message["message"]
-      fail_quip = fail_message["quip"]
+  #     fail_text = fail_message["message"]
+  #     fail_quip = fail_message["quip"]
 
-      outcome_embed = discord.Embed(description=f"{fail_text}",color=0x99ccff)
+  #     outcome_embed = discord.Embed(description=f"{fail_text}",color=0x99ccff)
 
-      outcome_embed.set_author(name="Outcome:")
-      outcome_embed.set_footer(text=f"{fail_quip} | Succeed: 50%; Fail: 50%; Grinch: 0%")
+  #     outcome_embed.set_author(name="Outcome:")
+  #     outcome_embed.set_footer(text=f"{fail_quip} | Succeed: 50%; Fail: 50%; Grinch: 0%")
 
-      await ctx.reply(embed=outcome_embed)
+  #     await ctx.reply(embed=outcome_embed)
     
-    elif outcome == 3:
-      boss_health = 100
+  #   elif outcome == 3:
+  #     boss_health = 100
 
-      grinch_text = "**Huh? What's This?**\nThe Grinch <:grinch_grin:918888521790541925> : Well well. All these children seem to having fun..a little too much fun. Let's change that, shall we?\n\n"
+  #     grinch_text = "**Huh? What's This?**\nThe Grinch <:grinch_grin:918888521790541925> : Well well. All these children seem to having fun..a little too much fun. Let's change that, shall we?\n\n"
 
-      santa_text = "**Oh No!**\nSanta 🎅 : The Grinch is trying to steal presents from the children! You have stop Him!\n"
+  #     santa_text = "**Oh No!**\nSanta 🎅 : The Grinch is trying to steal presents from the children! You have stop Him!\n"
 
-      grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
-      grinch_embed.set_author(name="Outcome?")
-      grinch_embed.set_footer(text="Muhaahahaaa")
+  #     grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
+  #     grinch_embed.set_author(name="Outcome?")
+  #     grinch_embed.set_footer(text="Muhaahahaaa")
 
-      santa_embed = discord.Embed(description=f"{santa_text}",color=0xcc3300)
-      santa_embed.set_author(name="Outcome?")
-      santa_embed.set_footer(text="Ho Ho Ho")
+  #     santa_embed = discord.Embed(description=f"{santa_text}",color=0xcc3300)
+  #     santa_embed.set_author(name="Outcome?")
+  #     santa_embed.set_footer(text="Ho Ho Ho")
 
-      await asyncio.sleep(0.1)
+  #     await asyncio.sleep(0.1)
       
-      await ctx.reply(embed=grinch_embed)
-      await asyncio.sleep(5.5)
-      await ctx.reply(embed=santa_embed)
-      await asyncio.sleep(3.5)
+  #     await ctx.reply(embed=grinch_embed)
+  #     await asyncio.sleep(5.5)
+  #     await ctx.reply(embed=santa_embed)
+  #     await asyncio.sleep(3.5)
 
-      fight_task = asyncio.create_task(self.fight(ctx))
-      result = await fight_task
+  #     fight_task = asyncio.create_task(self.fight(ctx))
+  #     result = await fight_task
 
       
 
-      if not result["won"]:
+  #     if not result["won"]:
         
-        presents_stolen = result["stolen"]
+  #       presents_stolen = result["stolen"]
 
-        christmas_event_data.update_one({"_id": ctx.message.author.id}, {"$inc": {"presents": -presents_stolen}})
+  #       christmas_event_data.update_one({"_id": ctx.message.author.id}, {"$inc": {"presents": -presents_stolen}})
 
-        grinch_text = f"**Fail**\n<:grinch_grin:918888521790541925> : Looks like I win! I even managed to get {presents_stolen} present(s) from you. lol\n"
+  #       grinch_text = f"**Fail**\n<:grinch_grin:918888521790541925> : Looks like I win! I even managed to get {presents_stolen} present(s) from you. lol\n"
 
-        grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
-        grinch_embed.set_author(name="Outcome?")
-        grinch_embed.set_footer(text="Muhaahahaaa")
+  #       grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
+  #       grinch_embed.set_author(name="Outcome?")
+  #       grinch_embed.set_footer(text="Muhaahahaaa")
 
-        await ctx.reply(embed=grinch_embed)
+  #       await ctx.reply(embed=grinch_embed)
 
-      else:
-        presents_stolen = result["stolen"]
+  #     else:
+  #       presents_stolen = result["stolen"]
 
-        grinch_text = f"**Success**\n<:grinch_grin:918888521790541925> : Sigh. At-least I was able to get {presents_stolen} present(s). I'll be back when you least expect it! Hehe >:)\n"
+  #       grinch_text = f"**Success**\n<:grinch_grin:918888521790541925> : Sigh. At-least I was able to get {presents_stolen} present(s). I'll be back when you least expect it! Hehe >:)\n"
       
-        grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
-        grinch_embed.set_author(name="Outcome?")
-        grinch_embed.set_footer(text="Muhaahahaaa")
+  #       grinch_embed = discord.Embed(description=f"{grinch_text}",color=0x009933)
+  #       grinch_embed.set_author(name="Outcome?")
+  #       grinch_embed.set_footer(text="Muhaahahaaa")
 
-        await ctx.reply(embed=grinch_embed)
+  #       await ctx.reply(embed=grinch_embed)
   
 
 def setup(client):
