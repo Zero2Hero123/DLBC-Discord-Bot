@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask,request
 
 from threading import Thread
+
 
 
 
@@ -8,11 +9,16 @@ app = Flask('')
 
 
 
-@app.route('/')
-
+@app.route('/',methods=["GET","POST"])
 def home():
 
+  if request.method == "POST":
+
+    print("there was a post?")
+
     return "I'm alive"
+
+  
 
 
 

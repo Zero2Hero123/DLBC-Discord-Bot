@@ -15,6 +15,10 @@ import pymongo
 from pymongo import MongoClient
 from utils import *
 
+# FACEBOOK GRAPH API
+from config import access_token, profile_id
+import requests
+
 #image stuff
 from PIL import Image
 from io import BytesIO
@@ -40,7 +44,7 @@ for cog in cogs:
 # assests
 no_Permission = discord.Embed(description="Sorry, you don't have permission to run that command.",color=0xde370d)
 
-bad_words = ["test123","hentai","Hentai","porn","cunt","idgaf","wtf","WTF","niga","nigger","nigga","vagina","puss","pussy","dick","d1ck","d!ck","bich","bitch","bitc","Bitch","BITCH","BICH","fack","fak","fuck","fuk","Fuck","Fuk","cunt","CUNT","Cunt","asshole","🖕","shit","sh!t","sh1t","shii","a$$","shi","shii","shiii","shiiii","faggot","fag","Faggot","Fag","mfs","mf","stfu","Stfu","STFU"]
+bad_words = ["test123","hentai","Hentai","porn","cunt","idgaf","wtf","WTF","niga","nigger","nigga","vagina","puss","pussy","dick","d1ck","d!ck","bich","bitch","bitc","Bitch","BITCH","BICH","fack","fak","fuck","fuk","Fuck","Fuk","cunt","CUNT","Cunt","asshole","🖕","shit","sh!t","sh1t","shii","a$$","shi","shii","shiii","shiiii","faggot","fag","Faggot","Fag","mfs","stfu","Stfu","STFU"]
 
 # WEEKLY WORDS
 weekly_words = {
@@ -60,6 +64,20 @@ async def event_loop():
 
   await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,name=f"🦃ThanksGiving coming in {days_left}!🦃"))
 
+@tasks.loop(seconds=10)
+async def post_facebook_stuff():
+
+  facebook_announce_channel = discord.utils.get(client.guilds[0].channels, id=958726557923430452)
+
+  # Get facebook posts
+  profile_data = requests.get(f"https://graph.facebook.com/{profile_id}",params={"access_token": access_token, "fields": ["id","name","posts"]})
+
+  json_data = profile_data.json()
+
+  await usher_log.send(content= "Made a GET request to facebook.com Dlbc Baltimore\n " + json_data)
+
+  username = json_data["name"]
+  facebook_post_embed = discord.Embed(title=f"New post on {username}",description="")
   
 
 @tasks.loop(minutes=1)
@@ -197,9 +215,9 @@ async def on_ready():
   print('We have logged in as {0.user}'
   .format(client))
 
-  await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,name="DLBC Baltimore YT"))
+  await client.change_presence(status=discord.Status.online,activity=discord.Activity(type=discord.ActivityType.listening,name="John 14:1"))
 
-  weekly_words_loop.start()
+  await post_facebook_stuff.start()
 
 @client.event
 async def on_message(message):
@@ -246,14 +264,6 @@ async def on_message(message):
           if msg.content == check_txt:
             check_counter += 1
     
-    user_event_data = christmas_event_data.find_one({"_id": message.author.id})
-    if user_event_data == None: # If the person isnt in the database
-      if not message.author.bot:
-        post = {"_id": message.author.id, "presents": 0}
-        christmas_event_data.insert_one(post)
-
-        print(f"Added {message.author} to Holiday Event System.")
-    
     """
     # If the user has the same message 3 times then...
     if check_counter == 3:
@@ -270,36 +280,98 @@ async def on_message(message):
     """
 
     for word in bad_words:
-
-      if word in message.content: 
-        bad_word = True
+      
+      is_bad = is_badword(word,message.content)
+      
+      if is_bad["probable_mistake"]:
         
+        mistake_embed = discord.Embed(title="Bad Word Found!",description=f"Automod filter has found the use of a bad word in a user's message. Choose whether a warn is necessary.\n\n**Offense By**: {message.author.mention}\n**Triggered Word**: {word}",color=0xffcc00)
+        mistake_embed.add_field(name="Message Content:",value=f"```{message.content}```",inline=False)
 
-        if bad_word:
-          moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
-          moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
+        mistake_embed.set_thumbnail(url=message.author.avatar_url)
+        mistake_embed.timestamp = dt.datetime.utcnow()
+        mistake_embed.set_footer(text=f"AUTOMOD | User ID: {message.author.id}")
 
-          user_mod_data = moderation_system.find_one({"_id": message.author.id})
-          warns = user_mod_data["warnings"]
-          triggered_content = message.content
+        msg = await usher_log.send(
+          embed=mistake_embed,
+          components=[
+            [
+              Button(label="Warn",custom_id="warn",style=3),
+              Button(label="Ignore",custom_id="ignore",style=4)
+            ]
+            ]
+          )
+        try:
+          interaction = await client.wait_for("button_click", check = lambda i: i.custom_id == "warn" or i.custom_id == "ignore", timeout=15.0)
+        except asyncio.TimeoutError:
+
+          await msg.edit(
+          embed=mistake_embed,
+          components=[
+            [
+              Button(label="Default: Offense Ignored",custom_id="warn",disabled=True)
+            ]
+            ]
+          )
+
+
+        if interaction.custom_id == "warn":
+          await interaction.send(f"User: {message.author.id} has been warned.")
+
+          await msg.edit(
+          embed=mistake_embed,
+          components=[
+            [
+              Button(label="Warn",custom_id="warn",style=3,disabled=True),
+              Button(label="Ignore",custom_id="ignore",disabled=True)
+            ]
+            ]
+          )
+
           await message.delete(delay=None)
 
-          triggered_word = word
-          response = await message.channel.send(f"{message.author.mention} 🚫 Profanity is not allowed. This is your **#{warns}** warning.")
+          moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
+          moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
+        elif interaction.custom_id == "ignore":
+          await interaction.send("Offense Ignored.")
 
-          bad_word_embed = discord.Embed(title="🚫 Bad Word Triggered",description=f"Bad Word: `{triggered_word}` was triggered by **{author}**({author.mention})").set_thumbnail(url=author.avatar_url)
-          
-          bad_word_embed.add_field(name="Message Content:",value=f"```{triggered_content}```",inline=False)
+          await msg.edit(
+          embed=mistake_embed,
+          components=[
+            [
+              Button(label="Warn",custom_id="warn",disabled=True),
+              Button(label="Ignore",custom_id="ignore",style=3,disabled=True)
+            ]
+            ]
+          )
 
-          bad_word_embed.timestamp = dt.datetime.utcnow()
-          bad_word_embed.set_footer(text="AUTOMOD")
+        break
+      elif is_bad["is_bad"]: 
 
-          await usher_log.send(embed=bad_word_embed)
+        moderation_system.update_one({"_id": message.author.id}, {"$inc": {"warnings": 1}})
+        moderation_system.update_one({"_id": message.author.id}, {"$inc": {"total_warns": 1}})
 
-          await response.delete(delay=5)
+        user_mod_data = moderation_system.find_one({"_id": message.author.id})
+        warns = user_mod_data["warnings"]
+        triggered_content = message.content
+        await message.delete(delay=None)
 
+        triggered_word = word
+        response = await message.channel.send(f"{message.author.mention} 🚫 Profanity is not allowed. This is your **#{warns}** warning.")
 
-          # Check if their they have more than 3 warns.
+        bad_word_embed = discord.Embed(title="🚫 Bad Word Triggered",description=f"Bad Word: `{triggered_word}` was triggered by **{author}**({author.mention})").set_thumbnail(url=author.avatar_url)
+        
+        bad_word_embed.add_field(name="Message Content:",value=f"```{triggered_content}```",inline=False)
+
+        bad_word_embed.timestamp = dt.datetime.utcnow()
+        bad_word_embed.set_footer(text="AUTOMOD")
+
+        await usher_log.send(embed=bad_word_embed)
+
+        await response.delete(delay=5)
+
+        break
+        
   if not message.author.bot:
     max_warns = 3
     user_mod_data = moderation_system.find_one({"_id": message.author.id})
@@ -681,14 +753,6 @@ async def nerdify(ctx,user_id=None):
   await ctx.message.add_reaction("👍")
 
 @client.command(hidden=True)
-async def event(ctx):
-  everyone = ctx.guild.default_role
-
-  await ctx.send(content=f"{everyone}\n**🦃THANKSGIVING🦃**\n Looks like Thanksgiving is right around corner. Can't Wait 👀\nhttps://discord.gg/3waK2uf6?event=908804565237891102")
-
-  await ctx.message.delete(delay=None)
-
-@client.command(hidden=True)
 async def giftevent(ctx):
   everyone = ctx.guild.default_role
 
@@ -711,24 +775,16 @@ async def giftevent(ctx):
   
   await ctx.message.delete(delay=None)
 
-# @client.command(hidden=True)
-# async def oh(ctx):
-#   everyone = ctx.guild.default_role
-
-#   event_embed = discord.Embed(color=0xcc3300)
-
-#   event_embed.add_field(name="**NOTICE**:",value="Ho Ho Ho.🎅\nJust wanted to warn you that _The Grinch_ has been spotted somewhere nearby. Stay sharp when you `.deliver` a present. He may be lurking somewhere. 👀")
-#   event_embed.set_footer(text="Watch out.")
-#   event_embed.set_author(name="From Santa:")
-
-#   await ctx.send(content=f"{everyone}",embed=event_embed)
-#   await ctx.message.delete(delay=None)
-
 @client.command(hidden=True)
 async def dm(ctx,member: discord.Member,*,message_content: str):
 
   await member.send(content=message_content)
   await ctx.message.add_reactions("👍")
+
+@client.command()
+async def ping(ctx):
+
+  await ctx.reply(f"🏓Pong {client.latency}ms",)
 
 keep_alive()
 client.run(os.environ['TOKEN'])
