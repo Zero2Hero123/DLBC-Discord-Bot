@@ -9,14 +9,10 @@ app = Flask('')
 
 
 
-@app.route('/',methods=["GET","POST"])
+@app.route('/')
 def home():
 
-  if request.method == "POST":
-
-    print("there was a post?")
-
-    return "I'm alive"
+  return "I'm alive"
 
   
 

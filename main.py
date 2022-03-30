@@ -74,9 +74,10 @@ async def post_facebook_stuff():
 
   json_data = profile_data.json()
 
-  await usher_log.send(content= "Made a GET request to facebook.com Dlbc Baltimore\n " + json_data)
+  usher_log = client.get_channel(895826386416193626)
+  await usher_log.send(content= "Made a GET request to facebook.com Dlbc Baltimore \n" + str(json_data))
 
-  username = json_data["name"]
+  username = "dlbc"
   facebook_post_embed = discord.Embed(title=f"New post on {username}",description="")
   
 
